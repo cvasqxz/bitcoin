@@ -101,6 +101,10 @@ public:
         consensus.powLimit = uint256{"00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 10 * 60;
+        /** DarkGravityWell v3 Fork Params - Humwerthuz @ 30/12/2017 **/
+        consensus.nPowDGWHeight = 147000;
+        // Propuestas de Mejora para Chaucha (PMC)
+        consensus.PMC1 = 220000;
         consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.enforce_BIP94 = false;
         consensus.fPowNoRetargeting = false;
