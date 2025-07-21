@@ -53,6 +53,23 @@ enum class ByteUnit : uint64_t {
 };
 
 /**
+ * Used by GetPoWHash()
+ * Modern replace for BEGIN(a) ((char*)&(a))
+*/
+template<typename T>
+inline const char* begin_ptr(const T& a)
+{
+    return reinterpret_cast<const char*>(&a);
+}
+
+// Sobrecarga para objetos const pero con salida mutable
+template<typename T>
+inline char* begin_ptr_mutable(const T& a)
+{
+    return const_cast<char*>(reinterpret_cast<const char*>(&a));
+}
+
+/**
 * Remove unsafe chars. Safe chars chosen to allow simple messages/URLs/email
 * addresses, but avoid anything even possibly remotely dangerous like & or >
 * @param[in] str    The string to sanitize

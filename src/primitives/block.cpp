@@ -4,6 +4,8 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <primitives/block.h>
+#include <util/strencodings.h>
+#include <crypto/scrypt.h>
 
 #include <hash.h>
 #include <tinyformat.h>
@@ -11,6 +13,13 @@
 uint256 CBlockHeader::GetHash() const
 {
     return (HashWriter{} << *this).GetHash();
+}
+
+uint256 CBlockHeader::GetPoWHash() const
+{
+    uint256 thash;
+    scrypt_1024_1_1_256(begin_ptr(nVersion), begin_ptr_mutable(thash));
+    return thash;
 }
 
 std::string CBlock::ToString() const

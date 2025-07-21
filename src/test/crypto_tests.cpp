@@ -10,6 +10,7 @@
 #include <crypto/hmac_sha512.h>
 #include <crypto/poly1305.h>
 #include <crypto/ripemd160.h>
+#include <crypto/scrypt.h>
 #include <crypto/sha1.h>
 #include <crypto/sha256.h>
 #include <crypto/sha3.h>
@@ -1278,6 +1279,73 @@ BOOST_AUTO_TEST_CASE(muhash_tests)
     uint256 out4;
     overflowchk.Finalize(out4);
     BOOST_CHECK_EQUAL(HexStr(out4), "3a31e6903aff0de9f62f9a9f7f8b861de76ce2cda09822b90014319ae5dc2271");
+}
+
+BOOST_AUTO_TEST_CASE(scrypt_test_vectors)
+{
+    // Test scrypt with known test vectors
+    uint256 input_hash;
+    uint256 result_hash;
+    
+    // Test vector 1 - known scrypt test case
+    std::vector<unsigned char> input1 = ParseHex("020000004c1271c211717198227392b029a64a7971931d351b387bb80db027f270411e398a07046f7d4a08dd815412a8712f874a7ebf0507e3878bd24e20a3b73fd750a667d2f451eac7471b00de6659");
+    std::string expected1 = "00000000002bef4107f882f6115e0b01f348d21195dacd3582aa2dabd7985806";
+    
+    // Run scrypt on input using begin_ptr helpers like GetPoWHash()
+    scrypt_1024_1_1_256(begin_ptr(input1[0]), begin_ptr_mutable(result_hash));
+    
+    BOOST_CHECK_EQUAL(result_hash.ToString(), expected1);
+}
+
+BOOST_AUTO_TEST_CASE(scrypt_sse2_detection)
+{
+    // Test SSE2 detection and functionality
+    #if defined(ENABLE_SSE2)
+    std::string detection_result = scrypt_detect_sse2();
+    BOOST_CHECK(!detection_result.empty());
+    
+    // Test that detection sets up the function pointer correctly
+    uint256 test_input;
+    uint256 result1, result2;
+    
+    // Fill test input with some data
+    test_input = uint256{ParseHex("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")};
+    
+    // Test generic version
+    char scratchpad[SCRYPT_SCRATCHPAD_SIZE];
+    scrypt_1024_1_1_256_sp_generic(begin_ptr(test_input), 
+                                   begin_ptr_mutable(result1), 
+                                   scratchpad);
+    
+    // Test detected version (should be same result)
+    scrypt_1024_1_1_256_sp_detected(begin_ptr(test_input), 
+                                    begin_ptr_mutable(result2), 
+                                    scratchpad);
+    
+    BOOST_CHECK_EQUAL(result1.ToString(), result2.ToString());
+    #endif
+}
+
+BOOST_AUTO_TEST_CASE(scrypt_consistency_test)
+{
+    // Test consistency between different scrypt implementations
+    uint256 test_input;
+    uint256 result_generic, result_main;
+    
+    // Create test input
+    test_input = uint256{ParseHex("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")};
+    
+    // Test main scrypt function using begin_ptr helpers
+    scrypt_1024_1_1_256(begin_ptr(test_input), begin_ptr_mutable(result_main));
+    
+    // Test generic version with scratchpad
+    char scratchpad[SCRYPT_SCRATCHPAD_SIZE];
+    scrypt_1024_1_1_256_sp_generic(begin_ptr(test_input), 
+                                   begin_ptr_mutable(result_generic),
+                                   scratchpad);
+    
+    // Results should be identical
+    BOOST_CHECK_EQUAL(result_main.ToString(), result_generic.ToString());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

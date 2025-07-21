@@ -179,6 +179,23 @@ if(NOT MSVC)
   )
   set(ENABLE_SSE41 ${HAVE_SSE41})
 
+  # Check for SSE2 intrinsics.
+  set(SSE2_CXXFLAGS -msse2)
+  check_cxx_source_compiles_with_flags("
+    #include <emmintrin.h>
+
+    int main()
+    {
+      __m128i a = _mm_set1_epi32(0);
+      __m128i b = _mm_set1_epi32(1);
+      __m128i r = _mm_add_epi32(a, b);
+      return _mm_cvtsi128_si32(r);
+    }
+    " HAVE_SSE2
+    CXXFLAGS ${SSE2_CXXFLAGS}
+  )
+  set(ENABLE_SSE2 ${HAVE_SSE2})
+
   # Check for AVX2 intrinsics.
   set(AVX2_CXXFLAGS -mavx -mavx2)
   check_cxx_source_compiles_with_flags("
