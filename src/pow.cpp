@@ -17,14 +17,15 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
 {
     assert(pindexLast != nullptr);
     unsigned int nProofOfWorkLimit = UintToArith256(params.powLimit).GetCompact();
+    const int nHeight = pindexLast->nHeight + 1;
 
     // DarkGravityWell v3 - Humwerthuz @ 30/12/2017
-    if (pindexLast->nHeight+1 >= params.nPowDGWHeight) {
+    if (nHeight >= params.nPowDGWHeight) {
         return DarkGravityWave(pindexLast, params);
     }
 
     // Only change once per difficulty adjustment interval
-    if ((pindexLast->nHeight+1) % params.DifficultyAdjustmentInterval() != 0)
+    if (nHeight % params.DifficultyAdjustmentInterval() != 0)
     {
         if (params.fPowAllowMinDifficultyBlocks)
         {
@@ -45,13 +46,49 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
         return pindexLast->nBits;
     }
 
-    // Go back by what we want to be 14 days worth of blocks
-    int nHeightFirst = pindexLast->nHeight - (params.DifficultyAdjustmentInterval()-1);
-    assert(nHeightFirst >= 0);
-    const CBlockIndex* pindexFirst = pindexLast->GetAncestor(nHeightFirst);
+    // For pre-DGW blocks, use CBigNum-compatible calculation
+    // Replicate original Chaucha algorithm logic
+    const int64_t nTargetTimespan = params.nPowTargetTimespan;
+    const int nInterval = params.DifficultyAdjustmentInterval();
+    
+    // Determine blocks to go back (replicating original Chaucha logic)
+    int blockstogoback = nInterval - 1;
+    if (nHeight != nInterval) {
+        blockstogoback = nInterval;
+    }
+    
+    // Go back by the determined number of blocks
+    const CBlockIndex* pindexFirst = pindexLast;
+    for (int i = 0; pindexFirst && i < blockstogoback; i++) {
+        pindexFirst = pindexFirst->pprev;
+    }
     assert(pindexFirst);
-
-    return CalculateNextWorkRequired(pindexLast, pindexFirst->GetBlockTime(), params);
+    
+    // Calculate timespan
+    int64_t nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
+    
+    // Limit adjustment step (4x max like original CBigNum version)
+    if (nActualTimespan < nTargetTimespan/4)
+        nActualTimespan = nTargetTimespan/4;
+    if (nActualTimespan > nTargetTimespan*4)
+        nActualTimespan = nTargetTimespan*4;
+    
+    // Replicate CBigNum calculation with different precision handling
+    arith_uint256 bnOld;
+    bnOld.SetCompact(pindexLast->nBits);
+    
+    // CBigNum used arbitrary precision, try to simulate with extended precision
+    arith_uint256 bnNew = bnOld;
+    bnNew *= nActualTimespan;
+    bnNew /= nTargetTimespan;
+    
+    // Check against pow limit
+    const arith_uint256 bnPowLimit = UintToArith256(params.powLimit);
+    if (bnNew > bnPowLimit) {
+        bnNew = bnPowLimit;
+    }
+    
+    return bnNew.GetCompact();
 }
 
 unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nFirstBlockTime, const Consensus::Params& params)
@@ -140,6 +177,7 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const Consens
 
     return bnNew.GetCompact();
 }
+
 
 // Check that on difficulty adjustments, the new difficulty does not increase
 // or decrease beyond the permitted limits.
