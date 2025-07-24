@@ -96,7 +96,7 @@ public:
         consensus.BIP65Height = 145167;
         consensus.BIP66Height = 145167;
         consensus.CSVHeight = 1;
-        consensus.SegwitHeight = 0;
+        consensus.SegwitHeight = std::numeric_limits<int>::max(); // Chaucha does not use SegWit
         consensus.MinBIP9WarningHeight = 483840; // segwit activation height + miner confirmation window
         consensus.powLimit = uint256{"00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
         consensus.nPowTargetTimespan = 30 * 60; // 30 minutes
