@@ -196,20 +196,20 @@ if(ENABLE_WALLET)
   add_subdirectory(wallet)
 
   if(BUILD_WALLET_TOOL)
-    add_executable(bitcoin-wallet
+    add_executable(chaucha-wallet
       bitcoin-wallet.cpp
       init/bitcoin-wallet.cpp
       wallet/wallettool.cpp
     )
-    add_windows_resources(bitcoin-wallet bitcoin-wallet-res.rc)
-    target_link_libraries(bitcoin-wallet
+    add_windows_resources(chaucha-wallet bitcoin-wallet-res.rc)
+    target_link_libraries(chaucha-wallet
       core_interface
       bitcoin_wallet
       bitcoin_common
       bitcoin_util
       Boost::headers
     )
-    install_binary_component(bitcoin-wallet HAS_MANPAGE)
+    install_binary_component(chaucha-wallet HAS_MANPAGE)
   endif()
 endif()
 
@@ -329,17 +329,17 @@ target_link_libraries(bitcoin_node
 
 # Bitcoin Core bitcoind.
 if(BUILD_DAEMON)
-  add_executable(bitcoind
+  add_executable(chauchad
     bitcoind.cpp
     init/bitcoind.cpp
   )
-  add_windows_resources(bitcoind bitcoind-res.rc)
-  target_link_libraries(bitcoind
+  add_windows_resources(chauchad bitcoind-res.rc)
+  target_link_libraries(chauchad
     core_interface
     bitcoin_node
     $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
   )
-  install_binary_component(bitcoind HAS_MANPAGE)
+  install_binary_component(chauchad HAS_MANPAGE)
 endif()
 if(WITH_MULTIPROCESS AND BUILD_DAEMON)
   add_executable(bitcoin-node
@@ -385,9 +385,9 @@ target_link_libraries(bitcoin_cli
 
 # Bitcoin Core RPC client
 if(BUILD_CLI)
-  add_executable(bitcoin-cli bitcoin-cli.cpp)
-  add_windows_resources(bitcoin-cli bitcoin-cli-res.rc)
-  target_link_libraries(bitcoin-cli
+  add_executable(chaucha-cli bitcoin-cli.cpp)
+  add_windows_resources(chaucha-cli bitcoin-cli-res.rc)
+  target_link_libraries(chaucha-cli
     core_interface
     bitcoin_cli
     bitcoin_common
@@ -395,32 +395,32 @@ if(BUILD_CLI)
     libevent::core
     libevent::extra
   )
-  install_binary_component(bitcoin-cli HAS_MANPAGE)
+  install_binary_component(chaucha-cli HAS_MANPAGE)
 endif()
 
 
 if(BUILD_TX)
-  add_executable(bitcoin-tx bitcoin-tx.cpp)
-  add_windows_resources(bitcoin-tx bitcoin-tx-res.rc)
-  target_link_libraries(bitcoin-tx
+  add_executable(chaucha-tx bitcoin-tx.cpp)
+  add_windows_resources(chaucha-tx bitcoin-tx-res.rc)
+  target_link_libraries(chaucha-tx
     core_interface
     bitcoin_common
     bitcoin_util
     univalue
   )
-  install_binary_component(bitcoin-tx HAS_MANPAGE)
+  install_binary_component(chaucha-tx HAS_MANPAGE)
 endif()
 
 
 if(BUILD_UTIL)
-  add_executable(bitcoin-util bitcoin-util.cpp)
-  add_windows_resources(bitcoin-util bitcoin-util-res.rc)
-  target_link_libraries(bitcoin-util
+  add_executable(chaucha-util bitcoin-util.cpp)
+  add_windows_resources(chaucha-util bitcoin-util-res.rc)
+  target_link_libraries(chaucha-util
     core_interface
     bitcoin_common
     bitcoin_util
   )
-  install_binary_component(bitcoin-util HAS_MANPAGE)
+  install_binary_component(chaucha-util HAS_MANPAGE)
 endif()
 
 

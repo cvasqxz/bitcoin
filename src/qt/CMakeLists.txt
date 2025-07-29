@@ -222,40 +222,40 @@ if(qt_lib_type STREQUAL "STATIC_LIBRARY")
   )
 endif()
 
-add_executable(bitcoin-qt
+add_executable(chaucha-qt
   main.cpp
   ../init/bitcoin-qt.cpp
 )
 
-add_windows_resources(bitcoin-qt res/bitcoin-qt-res.rc)
+add_windows_resources(chaucha-qt res/bitcoin-qt-res.rc)
 
-target_link_libraries(bitcoin-qt
+target_link_libraries(chaucha-qt
   core_interface
   bitcoinqt
   bitcoin_node
 )
 
-import_plugins(bitcoin-qt)
-install_binary_component(bitcoin-qt HAS_MANPAGE)
+import_plugins(chaucha-qt)
+install_binary_component(chaucha-qt HAS_MANPAGE)
 if(WIN32)
-  set_target_properties(bitcoin-qt PROPERTIES WIN32_EXECUTABLE TRUE)
+  set_target_properties(chaucha-qt PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
 if(WITH_MULTIPROCESS)
-  add_executable(bitcoin-gui
+  add_executable(chaucha-gui
     main.cpp
     ../init/bitcoin-gui.cpp
   )
-  target_link_libraries(bitcoin-gui
+  target_link_libraries(chaucha-gui
     core_interface
     bitcoinqt
     bitcoin_node
     bitcoin_ipc
   )
-  import_plugins(bitcoin-gui)
-  install_binary_component(bitcoin-gui)
+  import_plugins(chaucha-gui)
+  install_binary_component(chaucha-gui)
   if(WIN32)
-    set_target_properties(bitcoin-gui PROPERTIES WIN32_EXECUTABLE TRUE)
+    set_target_properties(chaucha-gui PROPERTIES WIN32_EXECUTABLE TRUE)
   endif()
 endif()
 
