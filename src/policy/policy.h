@@ -101,9 +101,8 @@ static constexpr unsigned int MANDATORY_SCRIPT_VERIFY_FLAGS{SCRIPT_VERIFY_P2SH |
                                                              SCRIPT_VERIFY_DERSIG |
                                                              SCRIPT_VERIFY_NULLDUMMY |
                                                              SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY |
-                                                             SCRIPT_VERIFY_CHECKSEQUENCEVERIFY |
-                                                             SCRIPT_VERIFY_WITNESS |
-                                                             SCRIPT_VERIFY_TAPROOT};
+                                                             SCRIPT_VERIFY_CHECKSEQUENCEVERIFY};
+                                                             // SCRIPT_VERIFY_WITNESS and SCRIPT_VERIFY_TAPROOT removed for Chaucha compatibility
 
 /**
  * Standard script verification flags that standard transactions will comply
@@ -119,12 +118,8 @@ static constexpr unsigned int STANDARD_SCRIPT_VERIFY_FLAGS{MANDATORY_SCRIPT_VERI
                                                              SCRIPT_VERIFY_MINIMALIF |
                                                              SCRIPT_VERIFY_NULLFAIL |
                                                              SCRIPT_VERIFY_LOW_S |
-                                                             SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM |
-                                                             SCRIPT_VERIFY_WITNESS_PUBKEYTYPE |
-                                                             SCRIPT_VERIFY_CONST_SCRIPTCODE |
-                                                             SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_TAPROOT_VERSION |
-                                                             SCRIPT_VERIFY_DISCOURAGE_OP_SUCCESS |
-                                                             SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE};
+                                                             SCRIPT_VERIFY_CONST_SCRIPTCODE};
+                                                             // SegWit and Taproot related flags removed for Chaucha compatibility
 
 /** For convenience, standard but not mandatory verify flags. */
 static constexpr unsigned int STANDARD_NOT_MANDATORY_VERIFY_FLAGS{STANDARD_SCRIPT_VERIFY_FLAGS & ~MANDATORY_SCRIPT_VERIFY_FLAGS};
