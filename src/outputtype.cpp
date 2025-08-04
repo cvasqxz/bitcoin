@@ -25,13 +25,9 @@ std::optional<OutputType> ParseOutputType(const std::string& type)
 {
     if (type == OUTPUT_TYPE_STRING_LEGACY) {
         return OutputType::LEGACY;
-    } else if (type == OUTPUT_TYPE_STRING_P2SH_SEGWIT) {
-        return OutputType::P2SH_SEGWIT;
-    } else if (type == OUTPUT_TYPE_STRING_BECH32) {
-        return OutputType::BECH32;
-    } else if (type == OUTPUT_TYPE_STRING_BECH32M) {
-        return OutputType::BECH32M;
     }
+    // Chaucha only supports legacy P2PKH addresses
+    // SegWit, Bech32, and Taproot are not supported
     return std::nullopt;
 }
 
