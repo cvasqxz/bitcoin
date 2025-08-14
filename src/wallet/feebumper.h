@@ -92,7 +92,10 @@ public:
             break;
         case SigVersion::TAPROOT:
         case SigVersion::TAPSCRIPT:
-            assert(false);
+            // Chaucha: Taproot not supported, treat as legacy
+            m_sigs_weight += weight * WITNESS_SCALE_FACTOR;
+            m_sigs_count += 1 * WITNESS_SCALE_FACTOR;
+            break;
         }
     }
 
