@@ -1113,7 +1113,8 @@ static bool IsLimitedPeer(const Peer& peer)
 /** Whether this peer can serve us witness data */
 static bool CanServeWitnesses(const Peer& peer)
 {
-    return peer.m_their_services & NODE_WITNESS;
+    // Chaucha does not support witness data (SegWit)
+    return false;
 }
 
 std::chrono::microseconds PeerManagerImpl::NextInvToInbounds(std::chrono::microseconds now,
@@ -1644,10 +1645,10 @@ ServiceFlags PeerManagerImpl::GetDesirableServiceFlags(ServiceFlags services) co
     if (services & NODE_NETWORK_LIMITED) {
         // Limited peers are desirable when we are close to the tip.
         if (ApproximateBestBlockDepth() < NODE_NETWORK_LIMITED_ALLOW_CONN_BLOCKS) {
-            return ServiceFlags(NODE_NETWORK_LIMITED | NODE_WITNESS);
+            return ServiceFlags(NODE_NETWORK_LIMITED);
         }
     }
-    return ServiceFlags(NODE_NETWORK | NODE_WITNESS);
+    return ServiceFlags(NODE_NETWORK);
 }
 
 PeerRef PeerManagerImpl::GetPeerRef(NodeId id) const
