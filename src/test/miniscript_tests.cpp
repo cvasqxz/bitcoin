@@ -272,14 +272,6 @@ public:
         return sig == it->second;
     }
 
-    bool CheckSchnorrSignature(Span<const unsigned char> sig, Span<const unsigned char> pubkey, SigVersion,
-                               ScriptExecutionData&, ScriptError*) const override {
-        XOnlyPubKey pk{pubkey};
-        auto it = g_testdata->schnorr_signatures.find(pk);
-        if (it == g_testdata->schnorr_signatures.end()) return false;
-        return std::ranges::equal(sig, it->second);
-    }
-
     bool CheckLockTime(const CScriptNum& locktime) const override {
         // Delegate to Satisfier.
         return ctx.CheckAfter(locktime.GetInt64());
@@ -323,24 +315,16 @@ std::set<Challenge> FindChallenges(const NodeRef& ref) {
     return chal;
 }
 
-//! The spk for this script under the given context. If it's a Taproot output also record the spend data.
-CScript ScriptPubKey(miniscript::MiniscriptContext ctx, const CScript& script, TaprootBuilder& builder)
+//! The spk for this script. Chaucha only has the P2WSH context.
+CScript ScriptPubKey(const CScript& script)
 {
-    if (!miniscript::IsTapscript(ctx)) return CScript() << OP_0 << WitnessV0ScriptHash(script);
-
-    // For Taproot outputs we always use a tree with a single script and a dummy internal key.
-    builder.Add(0, script, TAPROOT_LEAF_TAPSCRIPT);
-    builder.Finalize(XOnlyPubKey::NUMS_H);
-    return GetScriptForDestination(builder.GetOutput());
+    return CScript() << OP_0 << WitnessV0ScriptHash(script);
 }
 
 //! Fill the witness with the data additional to the script satisfaction.
-void SatisfactionToWitness(miniscript::MiniscriptContext ctx, CScriptWitness& witness, const CScript& script, TaprootBuilder& builder) {
+void SatisfactionToWitness(CScriptWitness& witness, const CScript& script) {
     // For P2WSH, it's only the witness script.
     witness.stack.emplace_back(script.begin(), script.end());
-    if (!miniscript::IsTapscript(ctx)) return;
-    // For Tapscript we also need the control block.
-    witness.stack.push_back(*builder.GetSpendData().scripts.begin()->second.begin());
 }
 
 struct MiniScriptTest : BasicTestingSetup {
@@ -358,27 +342,23 @@ void TestSatisfy(const KeyConverter& converter, const std::string& testcase, con
         for (int add = -1; add < (int)challist.size(); ++add) {
             if (add >= 0) satisfier.supported.insert(challist[add]); // The first iteration does not add anything
 
-            // Get the ScriptPubKey for this script, filling spend data if it's Taproot.
-            TaprootBuilder builder;
-            const CScript script_pubkey{ScriptPubKey(converter.MsContext(), script, builder)};
+            const CScript script_pubkey{ScriptPubKey(script)};
 
             // Run malleable satisfaction algorithm.
             CScriptWitness witness_mal;
             const bool mal_success = node->Satisfy(satisfier, witness_mal.stack, false) == miniscript::Availability::YES;
-            SatisfactionToWitness(converter.MsContext(), witness_mal, script, builder);
+            SatisfactionToWitness(witness_mal, script);
 
             // Run non-malleable satisfaction algorithm.
             CScriptWitness witness_nonmal;
             const bool nonmal_success = node->Satisfy(satisfier, witness_nonmal.stack, true) == miniscript::Availability::YES;
             // Compute witness size (excluding script push, control block, and witness count encoding).
             const size_t wit_size = GetSerializeSize(witness_nonmal.stack) - GetSizeOfCompactSize(witness_nonmal.stack.size());
-            SatisfactionToWitness(converter.MsContext(), witness_nonmal, script, builder);
+            SatisfactionToWitness(witness_nonmal, script);
 
             if (nonmal_success) {
-                // Non-malleable satisfactions are bounded by the satisfaction size plus:
-                // - For P2WSH spends, the witness script
-                // - For Tapscript spends, both the witness script and the control block
-                const size_t max_stack_size{*node->GetStackSize() + 1 + miniscript::IsTapscript(converter.MsContext())};
+                // Non-malleable satisfactions are bounded by the satisfaction size plus the witness script.
+                const size_t max_stack_size{*node->GetStackSize() + 1};
                 BOOST_CHECK(witness_nonmal.stack.size() <= max_stack_size);
                 // If a non-malleable satisfaction exists, the malleable one must also exist, and be identical to it.
                 BOOST_CHECK(mal_success);

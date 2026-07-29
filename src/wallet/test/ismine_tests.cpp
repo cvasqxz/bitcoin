@@ -612,33 +612,6 @@ BOOST_AUTO_TEST_CASE(ismine_standard)
         result = spk_manager->IsMine(scriptPubKey);
         BOOST_CHECK_EQUAL(result, ISMINE_SPENDABLE);
 
-        // Test P2TR (combo descriptor does not describe P2TR)
-        XOnlyPubKey xpk(pubkeys[0]);
-        Assert(xpk.IsFullyValid());
-        TaprootBuilder builder;
-        builder.Finalize(xpk);
-        WitnessV1Taproot output = builder.GetOutput();
-        scriptPubKey = GetScriptForDestination(output);
-        result = spk_manager->IsMine(scriptPubKey);
-        BOOST_CHECK_EQUAL(result, ISMINE_NO);
-    }
-
-    // Taproot - Descriptor
-    {
-        CWallet keystore(chain.get(), "", CreateMockableWalletDatabase());
-
-        std::string desc_str = "tr(" + EncodeSecret(keys[0]) + ")";
-
-        auto spk_manager = CreateDescriptor(keystore, desc_str, true);
-
-        XOnlyPubKey xpk(pubkeys[0]);
-        Assert(xpk.IsFullyValid());
-        TaprootBuilder builder;
-        builder.Finalize(xpk);
-        WitnessV1Taproot output = builder.GetOutput();
-        scriptPubKey = GetScriptForDestination(output);
-        result = spk_manager->IsMine(scriptPubKey);
-        BOOST_CHECK_EQUAL(result, ISMINE_SPENDABLE);
     }
 
     // OP_RETURN

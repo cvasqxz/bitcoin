@@ -1257,29 +1257,6 @@ BOOST_AUTO_TEST_CASE(script_combineSigs)
     BOOST_CHECK(combined.scriptSig == partial3c);
 }
 
-/**
- * Reproduction of an exception incorrectly raised when parsing a public key inside a TapMiniscript.
- */
-BOOST_AUTO_TEST_CASE(sign_invalid_miniscript)
-{
-    FillableSigningProvider keystore;
-    SignatureData sig_data;
-    CMutableTransaction prev, curr;
-
-    // Create a Taproot output which contains a leaf in which a non-32 bytes push is used where a public key is expected
-    // by the Miniscript parser. This offending Script was found by the RPC fuzzer.
-    const auto invalid_pubkey{"173d36c8c9c9c9ffffffffffff0200000000021e1e37373721361818181818181e1e1e1e19000000000000000000b19292929292926b006c9b9b9292"_hex_u8};
-    TaprootBuilder builder;
-    builder.Add(0, {invalid_pubkey}, 0xc0);
-    builder.Finalize(XOnlyPubKey::NUMS_H);
-    prev.vout.emplace_back(0, GetScriptForDestination(builder.GetOutput()));
-    curr.vin.emplace_back(COutPoint{prev.GetHash(), 0});
-    sig_data.tr_spenddata = builder.GetSpendData();
-
-    // SignSignature can fail but it shouldn't raise an exception (nor crash).
-    BOOST_CHECK(!SignSignature(keystore, CTransaction(prev), curr, 0, SIGHASH_ALL, sig_data));
-}
-
 /* P2A input should be considered signed. */
 BOOST_AUTO_TEST_CASE(sign_paytoanchor)
 {
@@ -1531,7 +1508,7 @@ static std::vector<unsigned int> AllConsensusFlags()
 {
     std::vector<unsigned int> ret;
 
-    for (unsigned int i = 0; i < 128; ++i) {
+    for (unsigned int i = 0; i < 64; ++i) {
         unsigned int flag = 0;
         if (i & 1) flag |= SCRIPT_VERIFY_P2SH;
         if (i & 2) flag |= SCRIPT_VERIFY_DERSIG;
@@ -1539,12 +1516,9 @@ static std::vector<unsigned int> AllConsensusFlags()
         if (i & 8) flag |= SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY;
         if (i & 16) flag |= SCRIPT_VERIFY_CHECKSEQUENCEVERIFY;
         if (i & 32) flag |= SCRIPT_VERIFY_WITNESS;
-        if (i & 64) flag |= SCRIPT_VERIFY_TAPROOT;
 
         // SCRIPT_VERIFY_WITNESS requires SCRIPT_VERIFY_P2SH
         if (flag & SCRIPT_VERIFY_WITNESS && !(flag & SCRIPT_VERIFY_P2SH)) continue;
-        // SCRIPT_VERIFY_TAPROOT requires SCRIPT_VERIFY_WITNESS
-        if (flag & SCRIPT_VERIFY_TAPROOT && !(flag & SCRIPT_VERIFY_WITNESS)) continue;
 
         ret.push_back(flag);
     }
@@ -1632,95 +1606,5 @@ BOOST_AUTO_TEST_CASE(script_assets_test)
     file.close();
 }
 
-BOOST_AUTO_TEST_CASE(bip341_keypath_test_vectors)
-{
-    UniValue tests;
-    tests.read(json_tests::bip341_wallet_vectors);
-
-    const auto& vectors = tests["keyPathSpending"];
-
-    for (const auto& vec : vectors.getValues()) {
-        auto txhex = ParseHex(vec["given"]["rawUnsignedTx"].get_str());
-        CMutableTransaction tx;
-        SpanReader{txhex} >> TX_WITH_WITNESS(tx);
-        std::vector<CTxOut> utxos;
-        for (const auto& utxo_spent : vec["given"]["utxosSpent"].getValues()) {
-            auto script_bytes = ParseHex(utxo_spent["scriptPubKey"].get_str());
-            CScript script{script_bytes.begin(), script_bytes.end()};
-            CAmount amount{utxo_spent["amountSats"].getInt<int>()};
-            utxos.emplace_back(amount, script);
-        }
-
-        PrecomputedTransactionData txdata;
-        txdata.Init(tx, std::vector<CTxOut>{utxos}, true);
-
-        BOOST_CHECK(txdata.m_bip341_taproot_ready);
-        BOOST_CHECK_EQUAL(HexStr(txdata.m_spent_amounts_single_hash), vec["intermediary"]["hashAmounts"].get_str());
-        BOOST_CHECK_EQUAL(HexStr(txdata.m_outputs_single_hash), vec["intermediary"]["hashOutputs"].get_str());
-        BOOST_CHECK_EQUAL(HexStr(txdata.m_prevouts_single_hash), vec["intermediary"]["hashPrevouts"].get_str());
-        BOOST_CHECK_EQUAL(HexStr(txdata.m_spent_scripts_single_hash), vec["intermediary"]["hashScriptPubkeys"].get_str());
-        BOOST_CHECK_EQUAL(HexStr(txdata.m_sequences_single_hash), vec["intermediary"]["hashSequences"].get_str());
-
-        for (const auto& input : vec["inputSpending"].getValues()) {
-            int txinpos = input["given"]["txinIndex"].getInt<int>();
-            int hashtype = input["given"]["hashType"].getInt<int>();
-
-            // Load key.
-            auto privkey = ParseHex(input["given"]["internalPrivkey"].get_str());
-            CKey key;
-            key.Set(privkey.begin(), privkey.end(), true);
-
-            // Load Merkle root.
-            uint256 merkle_root;
-            if (!input["given"]["merkleRoot"].isNull()) {
-                merkle_root = uint256{ParseHex(input["given"]["merkleRoot"].get_str())};
-            }
-
-            // Compute and verify (internal) public key.
-            XOnlyPubKey pubkey{key.GetPubKey()};
-            BOOST_CHECK_EQUAL(HexStr(pubkey), input["intermediary"]["internalPubkey"].get_str());
-
-            // Sign and verify signature.
-            FlatSigningProvider provider;
-            provider.keys[key.GetPubKey().GetID()] = key;
-            MutableTransactionSignatureCreator creator(tx, txinpos, utxos[txinpos].nValue, &txdata, hashtype);
-            std::vector<unsigned char> signature;
-            BOOST_CHECK(creator.CreateSchnorrSig(provider, signature, pubkey, nullptr, &merkle_root, SigVersion::TAPROOT));
-            BOOST_CHECK_EQUAL(HexStr(signature), input["expected"]["witness"][0].get_str());
-
-            // We can't observe the tweak used inside the signing logic, so verify by recomputing it.
-            BOOST_CHECK_EQUAL(HexStr(pubkey.ComputeTapTweakHash(merkle_root.IsNull() ? nullptr : &merkle_root)), input["intermediary"]["tweak"].get_str());
-
-            // We can't observe the sighash used inside the signing logic, so verify by recomputing it.
-            ScriptExecutionData sed;
-            sed.m_annex_init = true;
-            sed.m_annex_present = false;
-            uint256 sighash;
-            BOOST_CHECK(SignatureHashSchnorr(sighash, sed, tx, txinpos, hashtype, SigVersion::TAPROOT, txdata, MissingDataBehavior::FAIL));
-            BOOST_CHECK_EQUAL(HexStr(sighash), input["intermediary"]["sigHash"].get_str());
-
-            // To verify the sigmsg, hash the expected sigmsg, and compare it with the (expected) sighash.
-            BOOST_CHECK_EQUAL(HexStr((HashWriter{HASHER_TAPSIGHASH} << std::span<const uint8_t>{ParseHex(input["intermediary"]["sigMsg"].get_str())}).GetSHA256()), input["intermediary"]["sigHash"].get_str());
-        }
-    }
-}
-
-BOOST_AUTO_TEST_CASE(compute_tapbranch)
-{
-    constexpr uint256 hash1{"8ad69ec7cf41c2a4001fd1f738bf1e505ce2277acdcaa63fe4765192497f47a7"};
-    constexpr uint256 hash2{"f224a923cd0021ab202ab139cc56802ddb92dcfc172b9212261a539df79a112a"};
-    constexpr uint256 result{"a64c5b7b943315f9b805d7a7296bedfcfd08919270a1f7a1466e98f8693d8cd9"};
-    BOOST_CHECK_EQUAL(ComputeTapbranchHash(hash1, hash2), result);
-}
-
-BOOST_AUTO_TEST_CASE(compute_tapleaf)
-{
-    constexpr uint8_t script[6] = {'f','o','o','b','a','r'};
-    constexpr uint256 tlc0{"edbc10c272a1215dcdcc11d605b9027b5ad6ed97cd45521203f136767b5b9c06"};
-    constexpr uint256 tlc2{"8b5c4f90ae6bf76e259dbef5d8a59df06359c391b59263741b25eca76451b27a"};
-
-    BOOST_CHECK_EQUAL(ComputeTapleafHash(0xc0, Span(script)), tlc0);
-    BOOST_CHECK_EQUAL(ComputeTapleafHash(0xc2, Span(script)), tlc2);
-}
 
 BOOST_AUTO_TEST_SUITE_END()

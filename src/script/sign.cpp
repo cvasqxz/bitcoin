@@ -89,11 +89,6 @@ static bool GetPubKey(const SigningProvider& provider, const SignatureData& sigd
         pubkey = pk_it->second.first;
         return true;
     }
-    const auto& tap_pk_it = sigdata.tap_pubkeys.find(address);
-    if (tap_pk_it != sigdata.tap_pubkeys.end()) {
-        pubkey = tap_pk_it->second.GetEvenCorrespondingCPubKey();
-        return true;
-    }
     // Query the underlying provider
     return provider.GetPubKey(address, pubkey);
 }

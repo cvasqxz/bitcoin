@@ -1604,37 +1604,6 @@ static bool ExecuteWitnessScript(const Span<const valtype>& stack_span, const CS
     return true;
 }
 
-uint256 ComputeTapleafHash(uint8_t leaf_version, Span<const unsigned char> script)
-{
-    return (HashWriter{HASHER_TAPLEAF} << leaf_version << CompactSizeWriter(script.size()) << script).GetSHA256();
-}
-
-uint256 ComputeTapbranchHash(Span<const unsigned char> a, Span<const unsigned char> b)
-{
-    HashWriter ss_branch{HASHER_TAPBRANCH};
-    if (std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end())) {
-        ss_branch << a << b;
-    } else {
-        ss_branch << b << a;
-    }
-    return ss_branch.GetSHA256();
-}
-
-uint256 ComputeTaprootMerkleRoot(Span<const unsigned char> control, const uint256& tapleaf_hash)
-{
-    assert(control.size() >= TAPROOT_CONTROL_BASE_SIZE);
-    assert(control.size() <= TAPROOT_CONTROL_MAX_SIZE);
-    assert((control.size() - TAPROOT_CONTROL_BASE_SIZE) % TAPROOT_CONTROL_NODE_SIZE == 0);
-
-    const int path_len = (control.size() - TAPROOT_CONTROL_BASE_SIZE) / TAPROOT_CONTROL_NODE_SIZE;
-    uint256 k = tapleaf_hash;
-    for (int i = 0; i < path_len; ++i) {
-        Span node{Span{control}.subspan(TAPROOT_CONTROL_BASE_SIZE + TAPROOT_CONTROL_NODE_SIZE * i, TAPROOT_CONTROL_NODE_SIZE)};
-        k = ComputeTapbranchHash(k, node);
-    }
-    return k;
-}
-
 static bool VerifyWitnessProgram(const CScriptWitness& witness, int witversion, const std::vector<unsigned char>& program, unsigned int flags, const BaseSignatureChecker& checker, ScriptError* serror, bool is_p2sh)
 {
     CScript exec_script; //!< Actually executed script (last stack item in P2WSH; implied P2PKH script in P2WPKH)

@@ -67,8 +67,7 @@ bool EqualSigningProviders(const FlatSigningProvider& a, const FlatSigningProvid
     return a.scripts == b.scripts
         && a.pubkeys == b.pubkeys
         && a.origins == b.origins
-        && a.keys == b.keys
-        && a.tr_trees == b.tr_trees;
+        && a.keys == b.keys;
 }
 
 std::string UseHInsteadOfApostrophe(const std::string& desc)
