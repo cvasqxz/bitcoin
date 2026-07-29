@@ -1111,9 +1111,9 @@ static bool IsLimitedPeer(const Peer& peer)
 }
 
 /** Whether this peer can serve us witness data */
-static bool CanServeWitnesses(const Peer& peer)
+static bool CanServeWitnesses(const Peer& /*peer*/)
 {
-    // Chaucha does not support witness data (SegWit)
+    // Chaucha has no SegWit, so no peer ever has witness data to serve.
     return false;
 }
 

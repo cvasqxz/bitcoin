@@ -4,16 +4,25 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <primitives/block.h>
-#include <util/strencodings.h>
-#include <crypto/scrypt.h>
 
+#include <crypto/scrypt.h>
 #include <hash.h>
 #include <tinyformat.h>
+#include <util/strencodings.h>
+
+#include <type_traits>
 
 uint256 CBlockHeader::GetHash() const
 {
     return (HashWriter{} << *this).GetHash();
 }
+
+// GetPoWHash() hashes the header's raw in-memory bytes rather than a serialized
+// copy, so the members must be laid out contiguously and match the 80-byte wire
+// format exactly. A mismatch here would silently change every block hash.
+static_assert(std::is_standard_layout_v<CBlockHeader>);
+static_assert(sizeof(CBlockHeader) == 80);
+static_assert(offsetof(CBlockHeader, nVersion) == 0);
 
 uint256 CBlockHeader::GetPoWHash() const
 {

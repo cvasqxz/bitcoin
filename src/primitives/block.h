@@ -52,8 +52,11 @@ public:
     }
 
     uint256 GetHash() const;
+
+    /** scrypt(N=1024, r=1, p=1) over the raw 80-byte header. This is the hash
+     *  compared against nBits; GetHash() is only an identifier. */
     uint256 GetPoWHash() const;
-    
+
     NodeSeconds Time() const
     {
         return NodeSeconds{std::chrono::seconds{nTime}};

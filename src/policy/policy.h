@@ -96,19 +96,25 @@ static constexpr unsigned int MAX_DUST_OUTPUTS_PER_TX{1};
  *
  * Note that this does not affect consensus validity; see GetBlockScriptFlags()
  * for that.
+ *
+ * Chaucha omits SCRIPT_VERIFY_WITNESS and SCRIPT_VERIFY_TAPROOT: neither soft
+ * fork is deployed on this chain.
  */
 static constexpr unsigned int MANDATORY_SCRIPT_VERIFY_FLAGS{SCRIPT_VERIFY_P2SH |
                                                              SCRIPT_VERIFY_DERSIG |
                                                              SCRIPT_VERIFY_NULLDUMMY |
                                                              SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY |
                                                              SCRIPT_VERIFY_CHECKSEQUENCEVERIFY};
-                                                             // SCRIPT_VERIFY_WITNESS and SCRIPT_VERIFY_TAPROOT removed for Chaucha compatibility
 
 /**
  * Standard script verification flags that standard transactions will comply
  * with. However we do not ban/disconnect nodes that forward txs violating
  * the additional (non-mandatory) rules here, to improve forwards and
  * backwards compatibility.
+ *
+ * Chaucha omits the SegWit- and Taproot-specific flags. Note that
+ * SCRIPT_VERIFY_CLEANSTACK is also omitted, which leaves scriptSigs malleable;
+ * CLEANSTACK does not actually depend on SegWit and could be restored.
  */
 static constexpr unsigned int STANDARD_SCRIPT_VERIFY_FLAGS{MANDATORY_SCRIPT_VERIFY_FLAGS |
                                                              SCRIPT_VERIFY_STRICTENC |
@@ -118,7 +124,6 @@ static constexpr unsigned int STANDARD_SCRIPT_VERIFY_FLAGS{MANDATORY_SCRIPT_VERI
                                                              SCRIPT_VERIFY_NULLFAIL |
                                                              SCRIPT_VERIFY_LOW_S |
                                                              SCRIPT_VERIFY_CONST_SCRIPTCODE};
-                                                             // SegWit and Taproot related flags removed for Chaucha compatibility
 
 /** For convenience, standard but not mandatory verify flags. */
 static constexpr unsigned int STANDARD_NOT_MANDATORY_VERIFY_FLAGS{STANDARD_SCRIPT_VERIFY_FLAGS & ~MANDATORY_SCRIPT_VERIFY_FLAGS};

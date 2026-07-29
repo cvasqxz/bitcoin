@@ -132,15 +132,11 @@ bool BlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, s
                 pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
 
-                // Litecoin: Disable PoW Sanity check while loading block index from disk.
-                // We use the sha256 hash for the block index for performance reasons, which is recorded for later use.
-                // CheckProofOfWork() uses the scrypt hash which is discarded after a block is accepted.
-                // While it is technically feasible to verify the PoW, doing so takes several minutes as it
-                // requires recomputing every PoW hash during every Litecoin startup.
-                // We opt instead to simply trust the data that is on your local disk.
-                //if (!CheckProofOfWork(pindexNew->GetBlockHash(), pindexNew->nBits, consensusParams))
-                //    return error("%s: CheckProofOfWork failed: %s", __func__, pindexNew->ToString());
-
+                // Chaucha: no PoW sanity check while loading the block index from disk.
+                // The block index is keyed by the SHA256d header hash, but CheckProofOfWork()
+                // needs the scrypt hash, which is not stored. Recomputing it for every index
+                // entry would add several minutes to every startup, so we trust the local disk
+                // contents here; the PoW was verified when each block was first accepted.
 
                 pcursor->Next();
             } else {

@@ -50,44 +50,44 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
     // Replicate original Chaucha algorithm logic
     const int64_t nTargetTimespan = params.nPowTargetTimespan;
     const int nInterval = params.DifficultyAdjustmentInterval();
-    
+
     // Determine blocks to go back (replicating original Chaucha logic)
     int blockstogoback = nInterval - 1;
     if (nHeight != nInterval) {
         blockstogoback = nInterval;
     }
-    
+
     // Go back by the determined number of blocks
     const CBlockIndex* pindexFirst = pindexLast;
     for (int i = 0; pindexFirst && i < blockstogoback; i++) {
         pindexFirst = pindexFirst->pprev;
     }
     assert(pindexFirst);
-    
+
     // Calculate timespan
     int64_t nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
-    
+
     // Limit adjustment step (4x max like original CBigNum version)
     if (nActualTimespan < nTargetTimespan/4)
         nActualTimespan = nTargetTimespan/4;
     if (nActualTimespan > nTargetTimespan*4)
         nActualTimespan = nTargetTimespan*4;
-    
+
     // Replicate CBigNum calculation with different precision handling
     arith_uint256 bnOld;
     bnOld.SetCompact(pindexLast->nBits);
-    
+
     // CBigNum used arbitrary precision, try to simulate with extended precision
     arith_uint256 bnNew = bnOld;
     bnNew *= nActualTimespan;
     bnNew /= nTargetTimespan;
-    
+
     // Check against pow limit
     const arith_uint256 bnPowLimit = UintToArith256(params.powLimit);
     if (bnNew > bnPowLimit) {
         bnNew = bnPowLimit;
     }
-    
+
     return bnNew.GetCompact();
 }
 

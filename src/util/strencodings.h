@@ -53,20 +53,23 @@ enum class ByteUnit : uint64_t {
 };
 
 /**
- * Used by GetPoWHash()
- * Modern replace for BEGIN(a) ((char*)&(a))
-*/
+ * Raw byte view of an object, used by CBlockHeader::GetPoWHash() to feed the
+ * 80-byte header to scrypt. Modern replacement for the old BEGIN(a) macro.
+ *
+ * The caller is responsible for the object being trivially copyable and for
+ * not reading past its size.
+ */
 template<typename T>
 inline const char* begin_ptr(const T& a)
 {
     return reinterpret_cast<const char*>(&a);
 }
 
-// Sobrecarga para objetos const pero con salida mutable
+/** Mutable overload of begin_ptr(), for objects written to in place. */
 template<typename T>
-inline char* begin_ptr_mutable(const T& a)
+inline char* begin_ptr_mutable(T& a)
 {
-    return const_cast<char*>(reinterpret_cast<const char*>(&a));
+    return reinterpret_cast<char*>(&a);
 }
 
 /**
