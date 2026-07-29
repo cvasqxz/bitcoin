@@ -78,6 +78,10 @@ std::string CopyrightHolders(const std::string& strPrefix)
     if (copyright_devs.find("Chauchera") == std::string::npos) {
         strCopyrightHolders += "\n" + strPrefix + "The Chauchera developers";
     }
+    // Retain upstream MIT attribution
+    if (copyright_devs.find("Bitcoin Core") == std::string::npos) {
+        strCopyrightHolders += "\n" + strPrefix + "The Bitcoin Core developers";
+    }
     return strCopyrightHolders;
 }
 
