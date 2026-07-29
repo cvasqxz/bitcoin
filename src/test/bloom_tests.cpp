@@ -82,7 +82,10 @@ BOOST_AUTO_TEST_CASE(bloom_create_insert_serialize_with_tweak)
 
 BOOST_AUTO_TEST_CASE(bloom_create_insert_key)
 {
-    std::string strSecret = std::string("5Kg1gnAjaLfKiwhhPpGS3QfRg2m6awQvaj98JCZBZQ5SuS2F15C");
+    // Same private key as upstream's 5Kg1gnAjaLfKiwhhPpGS3QfRg2m6awQvaj98JCZBZQ5SuS2F15C,
+    // re-encoded with Chaucha's WIF prefix. The expected filter below is unchanged: it
+    // depends on the pubkey, not on how the secret is encoded.
+    std::string strSecret = std::string("8GjXDBfYZnBFb8qmAptMydRaG4xHnuZypyNbmP6534faLBGuAgf");
     CKey key = DecodeSecret(strSecret);
     CPubKey pubkey = key.GetPubKey();
     std::vector<unsigned char> vchPubKey(pubkey.begin(), pubkey.end());
