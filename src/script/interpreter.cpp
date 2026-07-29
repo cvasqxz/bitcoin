@@ -2057,8 +2057,12 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
         // Disallow CLEANSTACK without P2SH, as otherwise a switch CLEANSTACK->P2SH+CLEANSTACK
         // would be possible, which is not a softfork (and P2SH should be one).
         assert((flags & SCRIPT_VERIFY_P2SH) != 0);
-        // Chaucha: CLEANSTACK can work without WITNESS in legacy-only mode
-        // assert((flags & SCRIPT_VERIFY_WITNESS) != 0);
+        // Upstream also asserts CLEANSTACK implies WITNESS. That invariant only encodes
+        // Bitcoin's soft fork ordering; on a chain where SegWit never deployed,
+        // CLEANSTACK without WITNESS is the only coherent configuration. What must still
+        // hold is that we never enable WITNESS without CLEANSTACK, which would reopen
+        // the malleability CLEANSTACK closes.
+        assert((flags & SCRIPT_VERIFY_WITNESS) == 0 || (flags & SCRIPT_VERIFY_CLEANSTACK) != 0);
         if (stack.size() != 1) {
             return set_error(serror, SCRIPT_ERR_CLEANSTACK);
         }

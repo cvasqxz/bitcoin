@@ -85,17 +85,17 @@ public:
     CMainParams() {
         m_chain_type = ChainType::MAIN;
         consensus.nSubsidyHalvingInterval = 2628000;
-        consensus.script_flag_exceptions.emplace( // BIP16 exception
-            uint256{"00000000000002dc756eebf4f49723ed8d30cc28a5f108eb94b1ba88ac4f9c22"}, SCRIPT_VERIFY_NONE);
-        consensus.script_flag_exceptions.emplace( // Taproot exception
-            uint256{"0000000000000000000f14c35b2d841e986ab5441de8c585d5ffe55ea1e395ad"}, SCRIPT_VERIFY_P2SH | SCRIPT_VERIFY_WITNESS);
         consensus.BIP34Height = 145167;
         consensus.BIP34Hash = uint256{"8ca157ba0aea00f816d75149d0e8616a5e9dfa2fdd0c380e601038a9f0692774"};
         consensus.BIP65Height = 145167;
         consensus.BIP66Height = 145167;
-        consensus.CSVHeight = 1;
-        consensus.SegwitHeight = std::numeric_limits<int>::max(); // Chaucha does not use SegWit
-        consensus.MinBIP9WarningHeight = 483840; // segwit activation height + miner confirmation window
+        // CSV shared SegWit's BIP9 window (bit 0, 2018-01-12 to 2018-01-31) and failed
+        // with it: the chain stalled in late 2017, so the retarget boundary where
+        // lock-in would have been evaluated (height 153216) fell ~29h after nTimeout.
+        // Miners signalled ~95%, but BIP9 checks the timeout before the threshold.
+        consensus.CSVHeight = std::numeric_limits<int>::max(); // never activated
+        consensus.SegwitHeight = std::numeric_limits<int>::max(); // never activated
+        consensus.MinBIP9WarningHeight = 0;
         consensus.powLimit = uint256{"00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
         consensus.nPowTargetTimespan = 30 * 60; // 30 minutes
         consensus.nPowTargetSpacing = 1 * 60; // 1 minute
@@ -106,18 +106,12 @@ public:
         consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.enforce_BIP94 = false;
         consensus.fPowNoRetargeting = false;
-        consensus.nRuleChangeActivationThreshold = 1815; // 90% of 2016
-        consensus.nMinerConfirmationWindow = 8064; // nPowTargetTimespan / nPowTargetSpacing
+        consensus.nRuleChangeActivationThreshold = 6048; // 75% of 8064
+        consensus.nMinerConfirmationWindow = 8064;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::NEVER_ACTIVE;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].min_activation_height = 0; // No activation delay
-
-        // Deployment of Taproot (BIPs 340-342)
-        consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].bit = 2;
-        consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].nStartTime = 1619222400; // April 24th, 2021
-        consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].nTimeout = 1628640000; // August 11th, 2021
-        consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].min_activation_height = 709632; // Approximately November 12th, 2021
 
         consensus.nMinimumChainWork = uint256{"0000000000000000000000000000000000000000000000000000000000000001"};
         consensus.defaultAssumeValid = uint256{"9039d4426e02677c43d51053f4f31433f019714bdc534b9bd7a27f6629d9c02b"}; // 3500000
@@ -227,8 +221,8 @@ public:
         consensus.BIP34Hash = uint256{};
         consensus.BIP65Height = 1;
         consensus.BIP66Height = 1;
-        consensus.CSVHeight = 1;
-        consensus.SegwitHeight = std::numeric_limits<int>::max(); // Chaucha does not use SegWit
+        consensus.CSVHeight = std::numeric_limits<int>::max(); // never activated, as on mainnet
+        consensus.SegwitHeight = std::numeric_limits<int>::max(); // never activated
         consensus.MinBIP9WarningHeight = 0;
         consensus.powLimit = uint256{"00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
         consensus.nPowTargetTimespan = 30 * 60; // 30 minutes
@@ -324,7 +318,7 @@ public:
         consensus.BIP34Hash = uint256();
         consensus.BIP65Height = 1;  // Always active unless overridden
         consensus.BIP66Height = 1;  // Always active unless overridden
-        consensus.CSVHeight = 1;    // Always active unless overridden
+        consensus.CSVHeight = std::numeric_limits<int>::max(); // never active unless overridden
         consensus.SegwitHeight = std::numeric_limits<int>::max(); // Chaucha does not use SegWit
         consensus.MinBIP9WarningHeight = 0;
         consensus.powLimit = uint256{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};

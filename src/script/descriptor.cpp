@@ -1757,6 +1757,18 @@ std::vector<std::unique_ptr<DescriptorImpl>> ParseScript(uint32_t& key_exp_index
     Assume(ctx == ParseScriptContext::TOP || ctx == ParseScriptContext::P2SH || ctx == ParseScriptContext::P2WSH || ctx == ParseScriptContext::P2TR);
     std::vector<std::unique_ptr<DescriptorImpl>> ret;
     auto expr = Expr(sp);
+    // Chaucha deploys neither SegWit nor Taproot, so a witness program here is not a
+    // witness program at all: it is a bare script that leaves a non-empty stack, and
+    // anyone can spend the output with an empty scriptSig. Reject these descriptors at
+    // the parser, which is the single chokepoint shared by deriveaddresses,
+    // getdescriptorinfo, importdescriptors and wallet setup.
+    for (const std::string_view disabled : {"wpkh", "wsh", "tr"}) {
+        if (expr.size() > disabled.size() && expr[disabled.size()] == '(' &&
+            std::equal(disabled.begin(), disabled.end(), expr.begin())) {
+            error = strprintf("%s() is not supported: SegWit and Taproot are not deployed on Chaucha", disabled);
+            return {};
+        }
+    }
     if (Func("pk", expr)) {
         auto pubkeys = ParsePubkey(key_exp_index, expr, ctx, out, error);
         if (pubkeys.empty()) {

@@ -99,12 +99,17 @@ static constexpr unsigned int MAX_DUST_OUTPUTS_PER_TX{1};
  *
  * Chaucha omits SCRIPT_VERIFY_WITNESS and SCRIPT_VERIFY_TAPROOT: neither soft
  * fork is deployed on this chain.
+ *
+ * It also omits SCRIPT_VERIFY_NULLDUMMY and SCRIPT_VERIFY_CHECKSEQUENCEVERIFY.
+ * Both are gated on deployments that never activated here (NULLDUMMY on SegWit,
+ * CSV on its own BIP9 window), so GetBlockScriptFlags() never sets them. Keeping
+ * them mandatory would make the mempool stricter than consensus on a rule the
+ * rest of the network does not enforce, and mandatory failures can trigger a DoS
+ * ban — we would be banning honest peers. They are relay policy only, below.
  */
 static constexpr unsigned int MANDATORY_SCRIPT_VERIFY_FLAGS{SCRIPT_VERIFY_P2SH |
                                                              SCRIPT_VERIFY_DERSIG |
-                                                             SCRIPT_VERIFY_NULLDUMMY |
-                                                             SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY |
-                                                             SCRIPT_VERIFY_CHECKSEQUENCEVERIFY};
+                                                             SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY};
 
 /**
  * Standard script verification flags that standard transactions will comply
@@ -112,15 +117,19 @@ static constexpr unsigned int MANDATORY_SCRIPT_VERIFY_FLAGS{SCRIPT_VERIFY_P2SH |
  * the additional (non-mandatory) rules here, to improve forwards and
  * backwards compatibility.
  *
- * Chaucha omits the SegWit- and Taproot-specific flags. Note that
- * SCRIPT_VERIFY_CLEANSTACK is also omitted, which leaves scriptSigs malleable;
- * CLEANSTACK does not actually depend on SegWit and could be restored.
+ * Chaucha omits the SegWit- and Taproot-specific flags. SCRIPT_VERIFY_CLEANSTACK
+ * is kept: it has no dependency on SegWit, and without it every scriptSig is
+ * malleable — arbitrary pushes can be prepended — with no wtxid to fall back on.
+ * OP_CSV is left to SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS, which already makes
+ * it non-standard to relay without claiming it is a consensus rule.
  */
 static constexpr unsigned int STANDARD_SCRIPT_VERIFY_FLAGS{MANDATORY_SCRIPT_VERIFY_FLAGS |
                                                              SCRIPT_VERIFY_STRICTENC |
                                                              SCRIPT_VERIFY_MINIMALDATA |
                                                              SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS |
+                                                             SCRIPT_VERIFY_CLEANSTACK |
                                                              SCRIPT_VERIFY_MINIMALIF |
+                                                             SCRIPT_VERIFY_NULLDUMMY |
                                                              SCRIPT_VERIFY_NULLFAIL |
                                                              SCRIPT_VERIFY_LOW_S |
                                                              SCRIPT_VERIFY_CONST_SCRIPTCODE};

@@ -83,6 +83,16 @@ bool IsStandard(const CScript& scriptPubKey, const std::optional<unsigned>& max_
 
     if (whichType == TxoutType::NONSTANDARD) {
         return false;
+    } else if (whichType == TxoutType::WITNESS_V0_KEYHASH ||
+               whichType == TxoutType::WITNESS_V0_SCRIPTHASH ||
+               whichType == TxoutType::WITNESS_V1_TAPROOT ||
+               whichType == TxoutType::WITNESS_UNKNOWN ||
+               whichType == TxoutType::ANCHOR) {
+        // SegWit never activated on Chaucha, so these are not witness programs at
+        // all: they are bare scripts that any peer can spend. Refuse to relay them
+        // so the node never helps move funds into an output that is not really
+        // owned by anyone.
+        return false;
     } else if (whichType == TxoutType::MULTISIG) {
         unsigned char m = vSolutions.front()[0];
         unsigned char n = vSolutions.back()[0];

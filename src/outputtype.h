@@ -22,11 +22,17 @@ enum class OutputType {
     UNKNOWN,
 };
 
+/**
+ * Output types a wallet may set up key chains for.
+ *
+ * Chaucha lists only LEGACY. The SegWit and Taproot enumerators still exist so
+ * that code handling foreign scripts keeps compiling, but a wallet must never
+ * derive keys for them: with SegwitHeight never reached, a witness program is an
+ * ordinary script whose execution leaves a non-empty stack, so anyone can spend
+ * those outputs with an empty scriptSig.
+ */
 static constexpr auto OUTPUT_TYPES = std::array{
     OutputType::LEGACY,
-    OutputType::P2SH_SEGWIT,
-    OutputType::BECH32,
-    OutputType::BECH32M,
 };
 
 std::optional<OutputType> ParseOutputType(const std::string& str);
