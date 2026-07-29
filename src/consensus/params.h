@@ -116,8 +116,13 @@ struct Params {
     bool fPowNoRetargeting;
     int64_t nPowTargetSpacing;
     int64_t nPowTargetTimespan;
-    int nPowDGWHeight;
-    int PMC1;
+    /** Height at which DarkGravityWave v3 replaces the legacy retarget.
+     *  Defaults to "never": only chains that opt in must set it. Without a
+     *  default this is read uninitialised on every chain that omits it. */
+    int nPowDGWHeight{std::numeric_limits<int>::max()};
+    /** Height of Propuesta de Mejora para Chaucha 1 (block subsidy change).
+     *  Defaults to "never" for the same reason as nPowDGWHeight. */
+    int PMC1{std::numeric_limits<int>::max()};
     std::chrono::seconds PowTargetSpacing() const
     {
         return std::chrono::seconds{nPowTargetSpacing};
@@ -127,13 +132,6 @@ struct Params {
     uint256 nMinimumChainWork;
     /** By default assume that the signatures in ancestors of this block are valid */
     uint256 defaultAssumeValid;
-
-    /**
-     * If true, witness commitments contain a payload equal to a Bitcoin Script solution
-     * to the signet challenge. See BIP325.
-     */
-    bool signet_blocks{false};
-    std::vector<uint8_t> signet_challenge;
 
     int DeploymentHeight(BuriedDeployment dep) const
     {

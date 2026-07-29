@@ -8,12 +8,16 @@
 #include <optional>
 #include <string>
 
+/**
+ * Chaucha supports three chains. Bitcoin's testnet3/testnet4 and signet were
+ * removed: their genesis blocks were mined against SHA256d and cannot satisfy
+ * Chaucha's scrypt proof of work, and signet additionally depends on SegWit,
+ * which Chaucha never activated.
+ */
 enum class ChainType {
     MAIN,
-    TESTNET,
-    SIGNET,
+    TESTNET2,
     REGTEST,
-    TESTNET4,
 };
 
 std::string ChainTypeToString(ChainType chain);

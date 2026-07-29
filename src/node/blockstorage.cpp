@@ -21,7 +21,6 @@
 #include <primitives/transaction.h>
 #include <random.h>
 #include <serialize.h>
-#include <signet.h>
 #include <span.h>
 #include <streams.h>
 #include <sync.h>
@@ -1019,12 +1018,6 @@ bool BlockManager::ReadBlock(CBlock& block, const FlatFilePos& pos) const
     // Check the header
     if (!CheckProofOfWork(block.GetPoWHash(), block.nBits, GetConsensus())) {
         LogError("%s: Errors in block header at %s\n", __func__, pos.ToString());
-        return false;
-    }
-
-    // Signet only: check block solution
-    if (GetConsensus().signet_blocks && !CheckSignetBlockSolution(block, GetConsensus())) {
-        LogError("%s: Errors in block solution at %s\n", __func__, pos.ToString());
         return false;
     }
 
