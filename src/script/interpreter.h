@@ -129,20 +129,6 @@ enum : uint32_t {
     //
     SCRIPT_VERIFY_CONST_SCRIPTCODE = (1U << 16),
 
-    // Taproot/Tapscript validation (BIPs 341 & 342)
-    //
-    SCRIPT_VERIFY_TAPROOT = (1U << 17),
-
-    // Making unknown Taproot leaf versions non-standard
-    //
-    SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_TAPROOT_VERSION = (1U << 18),
-
-    // Making unknown OP_SUCCESS non-standard
-    SCRIPT_VERIFY_DISCOURAGE_OP_SUCCESS = (1U << 19),
-
-    // Making unknown public key versions (in BIP 342 scripts) non-standard
-    SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE = (1U << 20),
-
     // Constants to point to the highest flag in use. Add new flags above this line.
     //
     SCRIPT_VERIFY_END_MARKER
@@ -191,8 +177,6 @@ enum class SigVersion
 {
     BASE = 0,        //!< Bare scripts and BIP16 P2SH-wrapped redeemscripts
     WITNESS_V0 = 1,  //!< Witness v0 (P2WPKH and P2WSH); see BIP 141
-    TAPROOT = 2,     //!< Witness v1 with 32-byte program, not BIP16 P2SH-wrapped, key path spending; see BIP 341
-    TAPSCRIPT = 3,   //!< Witness v1 with 32-byte program, not BIP16 P2SH-wrapped, script path spending, leaf version 0xc0; see BIP 342
 };
 
 struct ScriptExecutionData
@@ -250,10 +234,6 @@ public:
         return false;
     }
 
-    virtual bool CheckSchnorrSignature(Span<const unsigned char> sig, Span<const unsigned char> pubkey, SigVersion sigversion, ScriptExecutionData& execdata, ScriptError* serror = nullptr) const
-    {
-        return false;
-    }
 
     virtual bool CheckLockTime(const CScriptNum& nLockTime) const
     {
@@ -292,13 +272,11 @@ private:
 
 protected:
     virtual bool VerifyECDSASignature(const std::vector<unsigned char>& vchSig, const CPubKey& vchPubKey, const uint256& sighash) const;
-    virtual bool VerifySchnorrSignature(Span<const unsigned char> sig, const XOnlyPubKey& pubkey, const uint256& sighash) const;
 
 public:
     GenericTransactionSignatureChecker(const T* txToIn, unsigned int nInIn, const CAmount& amountIn, MissingDataBehavior mdb) : txTo(txToIn), m_mdb(mdb), nIn(nInIn), amount(amountIn), txdata(nullptr) {}
     GenericTransactionSignatureChecker(const T* txToIn, unsigned int nInIn, const CAmount& amountIn, const PrecomputedTransactionData& txdataIn, MissingDataBehavior mdb) : txTo(txToIn), m_mdb(mdb), nIn(nInIn), amount(amountIn), txdata(&txdataIn) {}
     bool CheckECDSASignature(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const override;
-    bool CheckSchnorrSignature(Span<const unsigned char> sig, Span<const unsigned char> pubkey, SigVersion sigversion, ScriptExecutionData& execdata, ScriptError* serror = nullptr) const override;
     bool CheckLockTime(const CScriptNum& nLockTime) const override;
     bool CheckSequence(const CScriptNum& nSequence) const override;
 };
@@ -319,10 +297,6 @@ public:
         return m_checker.CheckECDSASignature(scriptSig, vchPubKey, scriptCode, sigversion);
     }
 
-    bool CheckSchnorrSignature(Span<const unsigned char> sig, Span<const unsigned char> pubkey, SigVersion sigversion, ScriptExecutionData& execdata, ScriptError* serror = nullptr) const override
-    {
-        return m_checker.CheckSchnorrSignature(sig, pubkey, sigversion, execdata, serror);
-    }
 
     bool CheckLockTime(const CScriptNum& nLockTime) const override
     {

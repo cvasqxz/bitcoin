@@ -73,12 +73,3 @@ bool CachingTransactionSignatureChecker::VerifyECDSASignature(const std::vector<
     return true;
 }
 
-bool CachingTransactionSignatureChecker::VerifySchnorrSignature(Span<const unsigned char> sig, const XOnlyPubKey& pubkey, const uint256& sighash) const
-{
-    uint256 entry;
-    m_signature_cache.ComputeEntrySchnorr(entry, sighash, sig, pubkey);
-    if (m_signature_cache.Get(entry, !store)) return true;
-    if (!TransactionSignatureChecker::VerifySchnorrSignature(sig, pubkey, sighash)) return false;
-    if (store) m_signature_cache.Set(entry);
-    return true;
-}

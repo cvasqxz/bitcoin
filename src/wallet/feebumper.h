@@ -82,11 +82,7 @@ public:
     void AddSigWeight(const size_t weight, const SigVersion sigversion)
     {
         switch (sigversion) {
-        // Chaucha does not support Taproot, so Schnorr signature versions are
-        // unreachable here and are weighed as legacy signatures for safety.
         case SigVersion::BASE:
-        case SigVersion::TAPROOT:
-        case SigVersion::TAPSCRIPT:
             m_sigs_weight += weight * WITNESS_SCALE_FACTOR;
             m_sigs_count += 1 * WITNESS_SCALE_FACTOR;
             break;
